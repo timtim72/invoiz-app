@@ -1,25 +1,24 @@
 // config/firebase.js
 
-// On importe les outils du SDK Firebase
+// Le code va maintenant chercher les clés dans les variables d'environnement
+// qui commencent par EXPO_PUBLIC_
+const firebaseConfig = {
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+};
+
+// Le reste du fichier (initializeApp, getAuth, etc.) ne change pas
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-// Votre configuration Firebase (ne change pas)
-const firebaseConfig = {
-  apiKey: "AIzaSyCoADMMElhC6N0-NzEY_tItxcM1z2xPtqI",
-  authDomain: "invoice-69660.firebaseapp.com",
-  projectId: "invoice-69660",
-  storageBucket: "invoice-69660.firebasestorage.app",
-  messagingSenderId: "562647358069",
-  appId: "1:562647358069:web:a2f000169a1975a362363c",
-};
-
-// On initialise l'application Firebase
 const app = initializeApp(firebaseConfig);
 
-// On exporte les services que nous allons utiliser dans toute l'application
-export const auth = getAuth(app);         // Pour l'authentification
-export const db = getFirestore(app);      // Pour la base de données (Firestore)
-export const storage = getStorage(app);   // Pour le stockage de fichiers (votre logo)
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
