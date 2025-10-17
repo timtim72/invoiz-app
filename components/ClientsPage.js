@@ -1,15 +1,12 @@
 // components/ClientsPage.js
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import SvgIcon from './SvgIcon';
 import Toast from './Toast';
-// 1. On importe le hook du contexte
 import { useClientsContext } from '../contexts/ClientsContext';
 
-// 2. On ajoute la nouvelle prop 'onViewClient'
 const ClientsPage = ({ onPageChange, onViewClient }) => {
-  // 3. On récupère les données et fonctions directement depuis le contexte
   const { clients, addClient, updateClient, deleteClient } = useClientsContext();
 
   const [showClientForm, setShowClientForm] = useState(false);
@@ -20,6 +17,8 @@ const ClientsPage = ({ onPageChange, onViewClient }) => {
   const [clientForm, setClientForm] = useState({ name: '', email: '', phone: '', address: '' });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [clientToDelete, setClientToDelete] = useState(null);
+  // Nouvel état pour le chargement
+  const [isSaving, setIsSaving] = useState(false);
 
   const showMessage = (message) => {
     setToastMessage(message);
@@ -43,20 +42,29 @@ const ClientsPage = ({ onPageChange, onViewClient }) => {
     setShowClientForm(true);
   };
 
-  const handleSaveClient = () => {
+  // Fonction de sauvegarde mise à jour
+  const handleSaveClient = async () => {
     if (!clientForm.name || !clientForm.email) {
       showMessage('Le nom et l\'email sont obligatoires');
       return;
     }
-    if (editingClient) {
-      updateClient(editingClient.id, { ...clientForm, createdAt: editingClient.createdAt });
-      showMessage('Client modifié avec succès');
-    } else {
-      addClient({ ...clientForm, createdAt: new Date().toISOString() });
-      showMessage('Client ajouté avec succès');
+    setIsSaving(true);
+    try {
+      if (editingClient) {
+        await updateClient(editingClient.id, { ...clientForm, createdAt: editingClient.createdAt });
+        showMessage('Client modifié avec succès');
+      } else {
+        await addClient({ ...clientForm, createdAt: new Date().toISOString() });
+        showMessage('Client ajouté avec succès');
+      }
+      setShowClientForm(false);
+      setEditingClient(null);
+    } catch (error) {
+      console.error("Erreur de sauvegarde du client:", error);
+      showMessage("La sauvegarde a échoué.");
+    } finally {
+      setIsSaving(false);
     }
-    setShowClientForm(false);
-    setEditingClient(null);
   };
 
   const handleDelete = (client) => {
@@ -76,35 +84,14 @@ const ClientsPage = ({ onPageChange, onViewClient }) => {
   return (
     <View style={styles.page}>
       {showToast && <Toast message={toastMessage} type="success" onClose={() => setShowToast(false)} />}
-
       {showDeleteConfirm && (
         <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Supprimer le client</Text>
-            <Text style={styles.modalText}>
-              Êtes-vous sûr de vouloir supprimer {clientToDelete?.name} ?
-            </Text>
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.outlineButton} onPress={() => setShowDeleteConfirm(false)}>
-                <Text style={styles.outlineButtonText}>Annuler</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.primaryButton, { backgroundColor: '#EF4444' }]} onPress={confirmDelete}>
-                <Text style={styles.primaryButtonText}>Supprimer</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <View style={styles.modal}><Text style={styles.modalTitle}>Supprimer le client</Text><Text style={styles.modalText}>Êtes-vous sûr de vouloir supprimer {clientToDelete?.name} ?</Text><View style={styles.modalActions}><TouchableOpacity style={styles.outlineButton} onPress={() => setShowDeleteConfirm(false)}><Text style={styles.outlineButtonText}>Annuler</Text></TouchableOpacity><TouchableOpacity style={[styles.primaryButton, { backgroundColor: '#EF4444' }]} onPress={confirmDelete}><Text style={styles.primaryButtonText}>Supprimer</Text></TouchableOpacity></View></View>
         </View>
       )}
-
       <View style={styles.pageHeader}>
-        <View>
-          <Text style={styles.title}>Clients</Text>
-          <Text style={styles.subtitle}>Gérez votre base de clients</Text>
-        </View>
-        <TouchableOpacity style={styles.primaryButton} onPress={handleAddNewClient}>
-          <SvgIcon name="plus" size={16} color="white" />
-          <Text style={styles.primaryButtonText}>Nouveau client</Text>
-        </TouchableOpacity>
+        <View><Text style={styles.title}>Clients</Text><Text style={styles.subtitle}>Gérez votre base de clients</Text></View>
+        <TouchableOpacity style={styles.primaryButton} onPress={handleAddNewClient}><SvgIcon name="plus" size={16} color="white" /><Text style={styles.primaryButtonText}>Nouveau client</Text></TouchableOpacity>
       </View>
 
       {showClientForm && (
@@ -122,8 +109,11 @@ const ClientsPage = ({ onPageChange, onViewClient }) => {
                         <Text style={styles.label}>Adresse</Text>
                         <TextInput style={[styles.input, styles.textArea]} placeholder="Adresse complète" value={clientForm.address} onChangeText={(text) => setClientForm({...clientForm, address: text})} multiline numberOfLines={3} />
                         <View style={styles.modalActions}>
-                            <TouchableOpacity style={styles.outlineButton} onPress={() => setShowClientForm(false)}><Text style={styles.outlineButtonText}>Annuler</Text></TouchableOpacity>
-                            <TouchableOpacity style={styles.primaryButton} onPress={handleSaveClient}><Text style={styles.primaryButtonText}>{editingClient ? 'Modifier' : 'Ajouter'}</Text></TouchableOpacity>
+                            <TouchableOpacity style={styles.outlineButton} onPress={() => setShowClientForm(false)} disabled={isSaving}><Text style={styles.outlineButtonText}>Annuler</Text></TouchableOpacity>
+                            {/* BOUTON DE SAUVEGARDE MIS À JOUR */}
+                            <TouchableOpacity style={[styles.primaryButton, isSaving && styles.buttonDisabled]} onPress={handleSaveClient} disabled={isSaving}>
+                              {isSaving ? <ActivityIndicator color="white" /> : <Text style={styles.primaryButtonText}>{editingClient ? 'Modifier' : 'Ajouter'}</Text>}
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </View>
@@ -131,13 +121,7 @@ const ClientsPage = ({ onPageChange, onViewClient }) => {
         </View>
       )}
 
-      <View style={styles.filters}>
-        <View style={styles.searchContainer}>
-          <SvgIcon name="search" size={18} color="#9ca3af" />
-          <TextInput style={styles.searchInput} placeholder="Rechercher un client..." value={searchTerm} onChangeText={setSearchTerm} />
-        </View>
-      </View>
-
+      <View style={styles.filters}><View style={styles.searchContainer}><SvgIcon name="search" size={18} color="#9ca3af" /><TextInput style={styles.searchInput} placeholder="Rechercher un client..." value={searchTerm} onChangeText={setSearchTerm} /></View></View>
       <ScrollView style={styles.clientList}>
         {filteredClients.length === 0 ? (
           <View style={styles.emptyState}>
@@ -148,7 +132,6 @@ const ClientsPage = ({ onPageChange, onViewClient }) => {
         ) : (
           filteredClients.map(client => (
             <View key={client.id} style={styles.clientCard}>
-              {/* 4. ON TRANSFORME LA PARTIE INFO EN BOUTON */}
               <TouchableOpacity style={styles.clientInfo} onPress={() => onViewClient(client)}>
                 <Text style={styles.clientName}>{client.name}</Text>
                 <Text style={styles.clientEmail}>{client.email}</Text>
@@ -156,7 +139,6 @@ const ClientsPage = ({ onPageChange, onViewClient }) => {
                 {client.address && <View style={styles.clientDetail}><SvgIcon name="home" size={14} color="#6b7280" /><Text style={styles.clientAddress}>{client.address}</Text></View>}
                 {client.createdAt && <Text style={styles.clientSince}>Client depuis {new Date(client.createdAt).toLocaleDateString('fr-FR')}</Text>}
               </TouchableOpacity>
-              
               <View style={styles.clientActions}>
                 <TouchableOpacity style={styles.editButton} onPress={() => handleEditClient(client)}><SvgIcon name="edit" size={16} color="#3B82F6" /></TouchableOpacity>
                 <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(client)}><SvgIcon name="trash" size={16} color="#EF4444" /></TouchableOpacity>
@@ -168,12 +150,13 @@ const ClientsPage = ({ onPageChange, onViewClient }) => {
     </View>
   );
 };
+
 const styles = StyleSheet.create({
   page: { flex: 1, padding: 20, backgroundColor: '#F3F4F6' },
   pageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
   title: { fontSize: 28, fontWeight: 'bold', color: '#1f2937', marginBottom: 4 },
   subtitle: { fontSize: 16, color: '#6b7280' },
-  primaryButton: { backgroundColor: '#3B82F6', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  primaryButton: { backgroundColor: '#3B82F6', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 45 },
   primaryButtonText: { color: 'white', fontSize: 14, fontWeight: '600' },
   modalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: 20 },
   modal: { backgroundColor: 'white', padding: 24, borderRadius: 12, width: '100%', maxWidth: 500 },
@@ -203,6 +186,8 @@ const styles = StyleSheet.create({
   deleteButton: { padding: 8, borderRadius: 6, backgroundColor: '#fef2f2' },
   emptyState: { alignItems: 'center', paddingVertical: 48 },
   emptyText: { fontSize: 16, color: '#6b7280', marginBottom: 16, textAlign: 'center', marginTop: 16 },
+  buttonDisabled: { backgroundColor: '#93C5FD', opacity: 0.7 },
 });
 
 export default ClientsPage;
+

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '../config/firebase';
-import { collection, query, onSnapshot, addDoc, updateDoc, doc, where, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, doc, where, writeBatch, getDocs } from 'firebase/firestore';
 import { useAuthContext } from '../contexts/AuthContext';
 
 export const useInvoices = () => {
@@ -10,49 +10,6 @@ export const useInvoices = () => {
   const [invoices, setInvoices] = useState([]);
   const [trashedInvoices, setTrashedInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // --- MOTEUR DE MISE À JOUR AUTOMATIQUE DES STATUTS ---
-  useEffect(() => {
-    // Cette fonction ne s'exécute que si un utilisateur est connecté
-    if (!currentUser || !invoices.length) return;
-
-    const checkOverdueInvoices = async () => {
-      const today = new Date();
-      // On ne veut pas vérifier les factures déjà payées ou les brouillons
-      const invoicesToCheck = invoices.filter(
-        inv => inv.status === 'pending' || inv.status === 'sent' 
-      );
-
-      if (invoicesToCheck.length === 0) return;
-
-      // On prépare une opération groupée pour mettre à jour toutes les factures en retard d'un seul coup
-      const batch = writeBatch(db);
-      let updatesMade = false;
-
-      invoicesToCheck.forEach(invoice => {
-        if (invoice.dueDate) {
-          const dueDate = new Date(invoice.dueDate);
-          // Si la date d'échéance est passée et la facture n'est pas payée
-          if (today > dueDate) {
-            const invoiceRef = doc(db, 'users', currentUser.uid, 'invoices', invoice.id);
-            batch.update(invoiceRef, { status: 'overdue' });
-            updatesMade = true;
-          }
-        }
-      });
-
-      // Si on a trouvé des factures à mettre à jour, on exécute l'opération
-      if (updatesMade) {
-        console.log("Mise à jour des factures en retard...");
-        await batch.commit();
-      }
-    };
-
-    checkOverdueInvoices();
-  // On exécute cette vérification une seule fois, 1 seconde après que les factures soient chargées
-  // Le délai évite les mises à jour trop fréquentes au démarrage
-  }, [invoices, currentUser]); 
-  // Le hook se relancera si la liste des factures ou l'utilisateur change.
 
   useEffect(() => {
     let unsubscribeInvoices = () => {};
@@ -116,6 +73,17 @@ export const useInvoices = () => {
     const invoiceDocRef = doc(db, 'users', currentUser.uid, 'invoices', id);
     await updateDoc(invoiceDocRef, { deleted: false });
   };
+  
+  // NOUVELLE FONCTION pour supprimer une seule facture définitivement
+  const permanentlyDeleteInvoice = async (id) => {
+    if (!currentUser) return;
+    const invoiceDocRef = doc(db, 'users', currentUser.uid, 'invoices', id);
+    try {
+      await deleteDoc(invoiceDocRef);
+    } catch (error) {
+      console.error("Erreur lors de la suppression définitive de la facture:", error);
+    }
+  };
 
   const permanentlyDeleteAllTrashed = async () => {
     if (!currentUser) return;
@@ -137,6 +105,8 @@ export const useInvoices = () => {
     trashedInvoices,
     restoreInvoice,
     permanentlyDeleteAllTrashed,
+    permanentlyDeleteInvoice, // On exporte la nouvelle fonction
     loading 
   };
 };
+
