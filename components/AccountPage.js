@@ -105,7 +105,7 @@ const AccountPage = ({ onPageChange }) => {
   };
 
   const handleContact = () => {
-    Linking.openURL('mailto:votre.email@support.com?subject=Support App Facturation');
+    Linking.openURL('mailto:timeosantos71@gmail.com?subject=Support App Facturation');
   };
 
   return (
