@@ -1,11 +1,15 @@
+// components/LoginScreen.js
+
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import SvgIcon from './SvgIcon';
 import Toast from './Toast';
 
 const LoginScreen = ({ onLogin, onSwitchToRegister }) => {
-  const [email, setEmail] = useState('demo@invoice.com');
-  const [password, setPassword] = useState('demo123');
+  // Les champs commencent maintenant vides
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,12 +27,15 @@ const LoginScreen = ({ onLogin, onSwitchToRegister }) => {
     
     setLoading(true);
     try {
-      const success = await onLogin(email, password);
-      if (!success) {
-        showMessage('Email ou mot de passe incorrect');
-      }
+      await onLogin(email, password);
+      // Si la connexion réussit, App.js gérera la navigation.
     } catch (error) {
-      showMessage('Une erreur est survenue');
+      // Firebase renvoie des erreurs claires.
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+        showMessage('Email ou mot de passe incorrect.');
+      } else {
+        showMessage('Une erreur de connexion est survenue.');
+      }
       console.error(error);
     } finally {
       setLoading(false);
@@ -44,7 +51,6 @@ const LoginScreen = ({ onLogin, onSwitchToRegister }) => {
           <View style={styles.logo}>
             <SvgIcon name="invoices" size={32} color="white" />
           </View>
-          {/* LE NOM A ÉTÉ CHANGÉ ICI */}
           <Text style={styles.appTitle}>Invoiz</Text>
           <Text style={styles.appSubtitle}>Gestion de facturation professionnelle</Text>
         </View>
@@ -83,7 +89,6 @@ const LoginScreen = ({ onLogin, onSwitchToRegister }) => {
         </View>
 
         <View style={styles.switchAuth}>
-          {/* ET ICI AUSSI POUR LA COHÉRENCE */}
           <Text style={styles.switchText}>Nouveau sur Invoiz ? </Text>
           <TouchableOpacity onPress={onSwitchToRegister} disabled={loading}>
             <Text style={styles.switchLink}>Créer un compte</Text>
@@ -94,6 +99,7 @@ const LoginScreen = ({ onLogin, onSwitchToRegister }) => {
   );
 };
 
+// Les styles ne changent pas
 const styles = StyleSheet.create({
   loginContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8f9fa', padding: 20 },
   loginCard: { backgroundColor: 'white', padding: 32, borderRadius: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 8, width: '100%', maxWidth: 400 },
