@@ -1,15 +1,13 @@
-// components/LoginScreen.js
+// components/RegisterScreen.js
 
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import SvgIcon from './SvgIcon';
 import Toast from './Toast';
 
-const LoginScreen = ({ onLogin, onSwitchToRegister }) => {
-  // Les champs commencent maintenant vides
+const RegisterScreen = ({ onRegister, onSwitchToLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,7 +17,7 @@ const LoginScreen = ({ onLogin, onSwitchToRegister }) => {
     setShowToast(true);
   };
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     if (!email || !password) {
       showMessage('Veuillez remplir tous les champs');
       return;
@@ -27,14 +25,14 @@ const LoginScreen = ({ onLogin, onSwitchToRegister }) => {
     
     setLoading(true);
     try {
-      await onLogin(email, password);
-      // Si la connexion réussit, App.js gérera la navigation.
+      await onRegister(email, password);
+      // Si l'inscription réussit, App.js gérera la navigation automatiquement.
     } catch (error) {
-      // Firebase renvoie des erreurs claires.
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-        showMessage('Email ou mot de passe incorrect.');
+      // Firebase renvoie des erreurs claires que l'on pourrait afficher
+      if (error.code === 'auth/email-already-in-use') {
+        showMessage('Cette adresse e-mail est déjà utilisée.');
       } else {
-        showMessage('Une erreur de connexion est survenue.');
+        showMessage("Une erreur est survenue lors de l'inscription.");
       }
       console.error(error);
     } finally {
@@ -51,8 +49,8 @@ const LoginScreen = ({ onLogin, onSwitchToRegister }) => {
           <View style={styles.logo}>
             <SvgIcon name="invoices" size={32} color="white" />
           </View>
-          <Text style={styles.appTitle}>Invoiz</Text>
-          <Text style={styles.appSubtitle}>Gestion de facturation professionnelle</Text>
+          <Text style={styles.appTitle}>Créer un compte Invoiz</Text>
+          <Text style={styles.appSubtitle}>Commencez à gérer vos factures dès aujourd'hui</Text>
         </View>
 
         <View style={styles.form}>
@@ -69,7 +67,7 @@ const LoginScreen = ({ onLogin, onSwitchToRegister }) => {
           <Text style={styles.label}>Mot de passe</Text>
           <TextInput
             style={styles.input}
-            placeholder="Votre mot de passe"
+            placeholder="Choisissez un mot de passe sécurisé"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -77,21 +75,21 @@ const LoginScreen = ({ onLogin, onSwitchToRegister }) => {
 
           <TouchableOpacity 
             style={[styles.primaryButton, loading && styles.buttonDisabled]} 
-            onPress={handleLogin}
+            onPress={handleRegister}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text style={styles.primaryButtonText}>Se connecter</Text>
+              <Text style={styles.primaryButtonText}>S'inscrire</Text>
             )}
           </TouchableOpacity>
         </View>
 
         <View style={styles.switchAuth}>
-          <Text style={styles.switchText}>Nouveau sur Invoiz ? </Text>
-          <TouchableOpacity onPress={onSwitchToRegister} disabled={loading}>
-            <Text style={styles.switchLink}>Créer un compte</Text>
+          <Text style={styles.switchText}>Déjà un compte ? </Text>
+          <TouchableOpacity onPress={onSwitchToLogin} disabled={loading}>
+            <Text style={styles.switchLink}>Se connecter</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -99,7 +97,7 @@ const LoginScreen = ({ onLogin, onSwitchToRegister }) => {
   );
 };
 
-// Les styles ne changent pas
+// On peut réutiliser les mêmes styles que pour LoginScreen
 const styles = StyleSheet.create({
   loginContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8f9fa', padding: 20 },
   loginCard: { backgroundColor: 'white', padding: 32, borderRadius: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 8, width: '100%', maxWidth: 400 },
@@ -118,5 +116,5 @@ const styles = StyleSheet.create({
   switchLink: { color: '#3B82F6', fontSize: 14, fontWeight: '500' },
 });
 
-export default LoginScreen;
+export default RegisterScreen;
 
