@@ -1,13 +1,12 @@
 // config/firebase.js
 
-// 1. Les imports doivent toujours être en premier.
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-// 2. Le code va maintenant chercher les noms de variables avec le préfixe EXPO_PUBLIC_
-// C'est la méthode officielle pour Expo, qui fonctionnera localement ET sur Vercel.
+// On utilise le préfixe EXPO_PUBLIC_ que Expo comprend partout.
+// C'est la méthode officielle et la seule qui fonctionnera.
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -17,7 +16,6 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-// 3. Enfin, on initialise Firebase et on exporte les services.
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
